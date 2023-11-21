@@ -5,7 +5,9 @@ import express from 'express';
 import fetch from 'node-fetch';
 
 const port = parseInt(process.env.PORT || '8080', 10);
+const pass_key = process.env.PASS_KEY;
 const api_keys = JSON.parse(process.env.API_KEYS);
+
 const upstreamUrl = 'https://api.openai.com/v1/chat/completions';
 
 const corsHeaders = {
@@ -40,14 +42,18 @@ const handlePost = async (req, res) => {
     return res.status(415).set(corsHeaders).type('text/plain').send("Unsupported media type. Use 'application/json' content type");
   }
 
+  const authHeader = req.get('Authorization');
+  if (!authHeader || authHeader !== `Bearer ` + pass_key) {
+    return res.status(401).set(coursHeaders).type('text/plain').send("Unauthorised request.")
+  }
+
   const { stream } = req.body;
   if (stream != null && stream !== true && stream !== false) {
     return res.status(400).set(corsHeaders).type('text/plain').send('The `stream` parameter must be a boolean value');
   }
 
   try {
-    const authHeader = req.get('Authorization');
-    const authHeaderUpstream = authHeader || `Bearer ${randomChoice(api_keys)}`;
+    const authHeaderUpstream = `Bearer ${randomChoice(api_keys)}`;
 
     const requestHeader = {
       'Content-Type': 'application/json',
